@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script type="module" src="script.js"></script>
+        <link rel="stylesheet" href="style.css" />
+        <title>chat app</title>
+    </head>
+    <body>
+        <header>
+            <h1>Welcome to the chat app</h1>
+        </header>
+        <div class="chat-stream"></div>
+        <div class="chat-input">
+            <form action="" method="post">
+                <label for="username-input">Username: </label>
+                <input
+                    type="text"
+                    name="username"
+                    id="username-input"
+                    max-length="100"
+                    required />
+
+                <label for="message-input">Message: </label>
+                <textarea
+                    name="message-body"
+                    id="message-input"
+                    max-length="400"
+                    required></textarea>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </body>
+</html>
