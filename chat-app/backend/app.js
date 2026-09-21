@@ -11,17 +11,33 @@ app.use(cors());
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
+const callbacksForNewMessages = [];
+
 // if a "since" query is provided send only messages after the timestamp
 // otherwise send all messages
 app.get("/", (req, res) => {
     const timestamp = req.query.since;
-    console.log(`timestamp is ${timestamp}`);
+    const wait = req.query.wait === "true";
+    const newMessages = getMessages(timestamp);
 
-    if (timestamp) {
-        res.json(getMessages(timestamp));
-        return;
+    if (newMessages.length > 0) {
+        return res.json(newMessages);
     }
-    res.json(getMessages());
+
+    if (!wait) {
+        return res.json([]);
+    }
+
+    const callback = (value) => {
+        if (!res.headersSent) res.json(value);
+    };
+
+    callbacksForNewMessages.push(callback);
+
+    req.on("close", () => {
+        const idx = callbacksForNewMessages.indexOf(callback);
+        if (idx !== -1) callbacksForNewMessages.splice(idx, 1);
+    });
 });
 
 app.post("/", (req, res) => {
@@ -30,7 +46,10 @@ app.post("/", (req, res) => {
             username: req.body.username,
             msg_body: req.body.msg_body,
         });
-        res.status(201).json(message);
+        while (callbacksForNewMessages.length > 0) {
+            const callback = callbacksForNewMessages.pop();
+            callback([message]);
+        }
     } catch (e) {
         res.status(400).json({ error: e.message });
     }

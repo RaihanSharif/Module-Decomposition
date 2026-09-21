@@ -10,6 +10,7 @@ const state = {
 form.addEventListener("submit", (event) => {
     event.preventDefault();
     sendMessage();
+    form.reset();
 });
 
 async function sendMessage() {
@@ -28,11 +29,6 @@ async function sendMessage() {
         if (!response.status === 201) {
             throw new Error(`did not save to db`);
         }
-
-        const data = await response.json();
-        const chatEntry = createChatEntry(data);
-        chatStreamDiv.appendChild(chatEntry);
-        form.reset();
     } catch (e) {
         alert(e.message);
     }
@@ -51,7 +47,10 @@ const keepFetchingMessages = async (intervalMS) => {
         state.messages.length > 0
             ? state.messages[state.messages.length - 1].timestamp
             : null;
-    const queryString = lastMessageTime ? `?since=${lastMessageTime}` : "";
+    const queryString = lastMessageTime
+        ? `?since=${lastMessageTime}&wait=true`
+        : "?wait=true";
+
     const url = `${BACKEND_URL}/${queryString}`;
     const rawResponse = await fetch(url);
     const response = await rawResponse.json();
@@ -62,6 +61,7 @@ const keepFetchingMessages = async (intervalMS) => {
 
 // TODO: render only new elements
 async function render() {
+    console.log("rendering...");
     const messageEntries = state.messages.map((message) => {
         return createChatEntry(message);
     });
@@ -78,7 +78,7 @@ function createChatEntry({ username, msg_body, timestamp }) {
     bodyElem.textContent = `message: ${msg_body}`;
 
     const timestampElem = document.createElement("p");
-    timestampElem.textContent = `sent: ${timestamp}`;
+    timestampElem.textContent = `sent: ${new Date(timestamp).toISOString()}`;
 
     card.appendChild(usernameElem);
     card.appendChild(bodyElem);
