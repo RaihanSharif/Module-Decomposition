@@ -4,6 +4,7 @@
     "description": "https://sdc.codeyourfuture.io/decomposition/sprints/2/prep/",
     "main": "app.js",
     "scripts": {
+        "dev": "node --watch app.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],

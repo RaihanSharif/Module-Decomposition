@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto";
 
 const messages = [];
 
+const MAX_USERNAME = 100;
+const MAX_BODY = 500;
+
 const dummyData = [
     {
         id: randomUUID(),
@@ -29,7 +32,7 @@ const dummyData = [
     },
     {
         id: randomUUID(),
-        useranme: "lol",
+        username: "lol",
         body: "sdrgsdrg",
         timestamp: Date.now(),
     },
@@ -38,30 +41,55 @@ const dummyData = [
 messages.push(...dummyData);
 
 /**
- * Adds a message to the list of messages
- *
- * @param {String} username username of message sender
- * @param {String} body message body
- * @returns message {id, username, body, timestamp}
+ * @typedef {Object} Message
+ * @property {string} id - UUID generated server-side.
+ * @property {string} username
+ * @property {string} msg_body
+ * @property {number} timestamp - ISO 8601 UTC string.
  */
-function addMessage(username, body) {
-    if (!username?.trim() || !body?.trim()) {
-        throw new Error("username and message body are required");
+
+/**
+ * Creates a message, stores it, and returns it.
+ * The id and timestamp are generated here; callers only supply content.
+ *
+ * @param {Object} input
+ * @param {string} input.username - 1-100 characters.
+ * @param {string} input.body - 1-500 characters.
+ * @returns {Message} The stored message.
+ * @throws {Error} If username or body is missing, not a string, or out of range.
+ */
+function addMessage({ username, msg_body }) {
+    if (typeof username !== "string" || typeof msg_body !== "string") {
+        throw new Error("username and body must be strings");
     }
 
-    const id = randomUUID();
-    const date = Date.now();
-    const message = { id, username, body, timestamp: date };
+    username = username.trim();
+    msg_body = msg_body.trim();
+
+    if (!username || username.length > MAX_USERNAME) {
+        throw new Error(`username must be 1-${MAX_USERNAME} characters`);
+    }
+    if (!msg_body || msg_body.length > MAX_BODY) {
+        throw new Error(`body must be 1-${MAX_BODY} characters`);
+    }
+
+    const message = {
+        id: randomUUID(),
+        username,
+        msg_body,
+        timestamp: new Date().toISOString(),
+    };
+
     messages.push(message);
     return message;
 }
 
 /**
  *
- * @returns List - copy of the currently stored messages
+ * @returns {Message[]} all saved messages
  */
 function getAllMessages() {
-    return [...messages];
+    return messages;
 }
 
 export { addMessage, getAllMessages };
