@@ -21,7 +21,10 @@ app.get("/", (req, res) => {
     const newMessages = getMessages(timestamp);
 
     if (newMessages.length > 0) {
-        return res.json(newMessages);
+        const msgWithCommand = newMessages.map((msg) => {
+            return { command: "new-message", message: msg };
+        });
+        return res.json(msgWithCommand);
     }
 
     if (!wait) {
@@ -32,6 +35,7 @@ app.get("/", (req, res) => {
         if (!res.headersSent) res.json(value);
     };
 
+    console.log(`[${Date.now()}] client registered, waiting`);
     callbacksForNewMessages.push(callback);
 
     req.on("close", () => {
@@ -46,20 +50,46 @@ app.post("/", (req, res) => {
             username: req.body.username,
             msg_body: req.body.msg_body,
         });
+
+        // wrap the message with a command type before putting in callback list
+        // so when client gets data, can process accordingly
+        const event = { command: "new-message", message: message };
+
+        console.log(
+            `[${Date.now()}] broadcasting reaction, ${callbacksForNewMessages.length} clients waiting`,
+        );
         while (callbacksForNewMessages.length > 0) {
             const callback = callbacksForNewMessages.pop();
-            callback([message]);
+            callback([event]);
         }
+
+        // client knows it's a message, doesn't need command type
+        res.json(event);
     } catch (e) {
         res.status(400).json({ error: e.message });
     }
 });
 
 app.post("/react", (req, res) => {
-    const id = req.body.id;
-    const action = req.body.action;
-    const data = addReaction(id, action);
-    res.json(data);
+    const data = addReaction(req.body.id, req.body.action);
+
+    if (!data) {
+        return res
+            .status(404)
+            .json({ error: "Message not found or invalid action" });
+    }
+
+    const event = { command: "reaction-update", message: data };
+
+    console.log(
+        `[${Date.now()}] broadcasting reaction, ${callbacksForNewMessages.length} clients waiting`,
+    );
+    while (callbacksForNewMessages.length > 0) {
+        const callback = callbacksForNewMessages.pop();
+        callback([event]);
+    }
+
+    res.json(event);
 });
 
 app.listen(PORT, () => {

@@ -26,7 +26,7 @@ async function sendMessage() {
             body: JSON.stringify(message),
         });
 
-        if (!response.status === 201) {
+        if (!response.ok) {
             throw new Error(`did not save to db`);
         }
     } catch (e) {
@@ -42,7 +42,7 @@ as query paramter "?since=intervalMS"
 Add newly fetched messages to the list of stored messages. 
 and render all messages
 */
-const keepFetchingMessages = async (intervalMS) => {
+const keepFetchingMessages = async () => {
     const lastMessageTime =
         state.messages.length > 0
             ? state.messages[state.messages.length - 1].timestamp
@@ -54,10 +54,22 @@ const keepFetchingMessages = async (intervalMS) => {
     const url = `${BACKEND_URL}/${queryString}`;
     const rawResponse = await fetch(url);
     const response = await rawResponse.json();
-    state.messages.push(...response);
-    render();
-    setTimeout(keepFetchingMessages, intervalMS);
+    response.forEach(handleServerUpdate);
+    setTimeout(keepFetchingMessages, 100);
 };
+
+function handleServerUpdate(payload) {
+    if (payload.command === "new-message") {
+        state.messages.push(payload.message);
+    } else if (payload.command === "reaction-update") {
+        const message = state.messages.find((m) => m.id === payload.message.id);
+        if (message) {
+            message.likes = payload.message.likes;
+            message.dislikes = payload.message.dislikes;
+        }
+    }
+    render();
+}
 
 // TODO: render only new elements
 async function render() {
@@ -71,12 +83,12 @@ chatStreamDiv.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
     const { messageId, action } = button.dataset;
-    const data = await reactToMessage(messageId, action);
 
-    if (action === "like") {
-        button.textContent = `likes: ${data["likes"]}`;
-    } else if (action === "dislike") {
-        button.textContent = `dislikes: ${data["dislikes"]}`;
+    try {
+        const responseEvent = await reactToMessage(messageId, action);
+        handleServerUpdate(responseEvent);
+    } catch (e) {
+        alert(`${e.message}. could not react!`);
     }
 });
 
@@ -142,4 +154,4 @@ async function reactToMessage(messageId, action) {
     }
 }
 
-keepFetchingMessages(100);
+keepFetchingMessages();

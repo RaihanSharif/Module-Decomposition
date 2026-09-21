@@ -115,13 +115,13 @@ function addReaction(messageId, action) {
 
     if (action === "like") {
         message.likes = (message.likes ?? 0) + 1;
-        return { likes: message.likes };
     }
 
     if (action === "dislike") {
         message.dislikes = (message.dislikes ?? 0) + 1;
-        return { dislikes: message.dislikes };
     }
+
+    return message;
 }
 
 export { addMessage, getMessages, addReaction };
