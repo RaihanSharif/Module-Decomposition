@@ -11,25 +11,28 @@
         <header>
             <h1>Welcome to the chat app</h1>
         </header>
-        <div class="chat-stream"></div>
-        <div class="chat-input">
-            <form action="" method="post">
+        <main>
+            <div class="chat-stream" role="log" aria-live="polite"></div>
+            <form class="chat-input">
                 <label for="username-input">Username: </label>
                 <input
                     type="text"
                     name="username"
                     id="username-input"
-                    max-length="100"
+                    maxlength="100"
+                    minlenght="1"
+                    autocomplete="username"
                     required />
-
                 <label for="message-input">Message: </label>
                 <textarea
-                    name="message-body"
+                    name="msg_body"
                     id="message-input"
-                    max-length="400"
+                    maxlength="500"
+                    minlength="1"
+                    rows="3"
                     required></textarea>
                 <button type="submit">Send</button>
             </form>
-        </div>
+        </main>
     </body>
 </html>
