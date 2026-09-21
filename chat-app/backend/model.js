@@ -11,30 +11,40 @@ const dummyData = [
         username: "asdf",
         msg_body: "this is a random message",
         timestamp: 1790004060770,
+        likes: 0,
+        dislikes: 0,
     },
     {
         id: randomUUID(),
         username: "razz",
         msg_body: "hahasfesafae",
         timestamp: 1790004060870,
+        likes: 10,
+        dislikes: 0,
     },
     {
         id: randomUUID(),
         username: "shazzman",
         msg_body: "ret35gvre",
         timestamp: 1790004060970,
+        likes: 50,
+        dislikes: 2,
     },
     {
         id: randomUUID(),
         username: "wtf",
         msg_body: "ergs45sdgsdr",
         timestamp: 1790004061070,
+        likes: 20,
+        dislikes: 0,
     },
     {
         id: randomUUID(),
         username: "lol",
         msg_body: "sdrgsdrg",
         timestamp: 1790004061170,
+        likes: 5,
+        dislikes: 0,
     },
 ];
 
@@ -78,6 +88,8 @@ function addMessage({ username, msg_body }) {
         username,
         msg_body,
         timestamp: Date.now(),
+        likes: 0,
+        dislikes: 0,
     };
 
     messages.push(message);
@@ -92,11 +104,24 @@ function addMessage({ username, msg_body }) {
  */
 function getMessages(timestamp) {
     if (timestamp) {
-        console.log("returning filtered messages");
         return messages.filter((message) => message.timestamp > timestamp);
     }
-    console.log("returning all messages");
     return messages;
 }
 
-export { addMessage, getMessages };
+function addReaction(messageId, action) {
+    const message = messages.find((m) => m.id === messageId);
+    if (!message) return;
+
+    if (action === "like") {
+        message.likes = (message.likes ?? 0) + 1;
+        return { likes: message.likes };
+    }
+
+    if (action === "dislike") {
+        message.dislikes = (message.dislikes ?? 0) + 1;
+        return { dislikes: message.dislikes };
+    }
+}
+
+export { addMessage, getMessages, addReaction };

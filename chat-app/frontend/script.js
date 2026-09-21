@@ -61,15 +61,35 @@ const keepFetchingMessages = async (intervalMS) => {
 
 // TODO: render only new elements
 async function render() {
-    console.log("rendering...");
     const messageEntries = state.messages.map((message) => {
         return createChatEntry(message);
     });
     chatStreamDiv.replaceChildren(...messageEntries);
 }
 
-function createChatEntry({ username, msg_body, timestamp }) {
+chatStreamDiv.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+    const { messageId, action } = button.dataset;
+    const data = await reactToMessage(messageId, action);
+
+    if (action === "like") {
+        button.textContent = `likes: ${data["likes"]}`;
+    } else if (action === "dislike") {
+        button.textContent = `dislikes: ${data["dislikes"]}`;
+    }
+});
+
+function createChatEntry({
+    id,
+    username,
+    msg_body,
+    timestamp,
+    likes,
+    dislikes,
+}) {
     const card = document.createElement("div");
+    card.className = "message-card";
 
     const usernameElem = document.createElement("p");
     usernameElem.textContent = `from: ${username}`;
@@ -80,13 +100,46 @@ function createChatEntry({ username, msg_body, timestamp }) {
     const timestampElem = document.createElement("p");
     timestampElem.textContent = `sent: ${new Date(timestamp).toISOString()}`;
 
+    const likeBtn = document.createElement("button");
+    likeBtn.textContent = `likes: ${likes}`;
+    likeBtn.dataset.messageId = id;
+    likeBtn.dataset.action = "like";
+
+    const dislikeBtn = document.createElement("button");
+    dislikeBtn.textContent = `dislikes: ${dislikes}`;
+    dislikeBtn.dataset.messageId = id;
+    dislikeBtn.dataset.action = "dislike";
+
+    const btnContainer = document.createElement("div");
+    btnContainer.className = "msg-btn-container";
+    btnContainer.append(likeBtn, dislikeBtn);
     card.appendChild(usernameElem);
     card.appendChild(bodyElem);
     card.appendChild(timestampElem);
-
-    card.className = "message-card";
+    card.appendChild(btnContainer);
 
     return card;
+}
+
+/**
+ *
+ * @param {string} messageId message to like or dislike
+ * @param {string} action type of reaction (like or dislike initially)
+ */
+async function reactToMessage(messageId, action) {
+    try {
+        const response = await fetch(`${BACKEND_URL}/react`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: messageId, action: action }),
+        });
+        if (!response.ok) {
+            throw new Error(`${response.status}: could not get data`);
+        }
+        return await response.json();
+    } catch (e) {
+        throw new Error(e.message);
+    }
 }
 
 keepFetchingMessages(100);

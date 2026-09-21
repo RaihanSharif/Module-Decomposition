@@ -4,7 +4,7 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
 import express from "express";
 import cors from "cors";
 
-import { addMessage, getMessages } from "./model.js";
+import { addMessage, getMessages, addReaction } from "./model.js";
 const app = express();
 
 app.use(cors());
@@ -53,6 +53,13 @@ app.post("/", (req, res) => {
     } catch (e) {
         res.status(400).json({ error: e.message });
     }
+});
+
+app.post("/react", (req, res) => {
+    const id = req.body.id;
+    const action = req.body.action;
+    const data = addReaction(id, action);
+    res.json(data);
 });
 
 app.listen(PORT, () => {
