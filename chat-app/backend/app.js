@@ -1,14 +1,15 @@
+import dotenv from "dotenv";
+dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
+
 import express from "express";
 import cors from "cors";
 
 import { addMessage, getAllMessages } from "./model.js";
 const app = express();
 
-// TODO: later replace with env variable
-const PORT = 3000;
-
 app.use(cors());
 app.use(express.json());
+const PORT = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
     const messages = getAllMessages();
