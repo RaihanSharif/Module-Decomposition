@@ -113,3 +113,9 @@ main {
     padding: 0.75rem 1rem;
     border-top: 1px solid black;
 }
+
+.message-card {
+    padding: 1rem;
+    border: 1px solid black;
+    margin-top: 0.5rem;
+}

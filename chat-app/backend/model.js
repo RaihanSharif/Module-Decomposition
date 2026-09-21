@@ -9,32 +9,32 @@ const dummyData = [
     {
         id: randomUUID(),
         username: "asdf",
-        body: "this is a random message",
-        timestamp: Date.now(),
+        msg_body: "this is a random message",
+        timestamp: new Date().toISOString(),
     },
     {
         id: randomUUID(),
         username: "razz",
-        body: "hahasfesafae",
-        timestamp: Date.now(),
+        msg_body: "hahasfesafae",
+        timestamp: new Date().toISOString(),
     },
     {
         id: randomUUID(),
         username: "shazzman",
-        body: "ret35gvre",
-        timestamp: Date.now(),
+        msg_body: "ret35gvre",
+        timestamp: new Date().toISOString(),
     },
     {
         id: randomUUID(),
         username: "wtf",
-        body: "ergs45sdgsdr",
-        timestamp: Date.now(),
+        msg_body: "ergs45sdgsdr",
+        timestamp: new Date().toISOString(),
     },
     {
         id: randomUUID(),
         username: "lol",
-        body: "sdrgsdrg",
-        timestamp: Date.now(),
+        msg_body: "sdrgsdrg",
+        timestamp: new Date().toISOString(),
     },
 ];
 
@@ -45,7 +45,7 @@ messages.push(...dummyData);
  * @property {string} id - UUID generated server-side.
  * @property {string} username
  * @property {string} msg_body
- * @property {number} timestamp - ISO 8601 UTC string.
+ * @property {string} timestamp - ISO 8601 UTC string.
  */
 
 /**

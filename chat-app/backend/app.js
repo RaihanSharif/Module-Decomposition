@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 
 import { addMessage, getAllMessages } from "./model.js";
 const app = express();
@@ -6,11 +7,12 @@ const app = express();
 // TODO: later replace with env variable
 const PORT = 3000;
 
+app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-    res.json(getAllMessages());
+    const messages = getAllMessages();
+    res.json(messages);
 });
 
 app.post("/", (req, res) => {
@@ -21,7 +23,6 @@ app.post("/", (req, res) => {
         });
         res.status(201).json(message);
     } catch (e) {
-        console.log(e.message);
         res.status(400).json({ error: e.message });
     }
 });
