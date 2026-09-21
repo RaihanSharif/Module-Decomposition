@@ -1,8 +1,11 @@
 const chatStreamDiv = document.querySelector(".chat-stream");
 const form = document.querySelector(".chat-input");
 
-const BACKEND_URL =
-    "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy/";
+const BACKEND_URL = "http://localhost:3000";
+
+const state = {
+    messages: [],
+};
 
 form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -29,29 +32,40 @@ async function sendMessage() {
         const data = await response.json();
         const chatEntry = createChatEntry(data);
         chatStreamDiv.appendChild(chatEntry);
+        form.reset();
     } catch (e) {
         alert(e.message);
     }
 }
 
-async function displayAllMessages() {
-    try {
-        const response = await fetch(BACKEND_URL);
+/*
+Fetches messages continuously in intervals
+If some messages already fetched, provide timestamp of last messages
+as query paramter "?since=intervalMS"
 
-        if (!response.ok) {
-            throw new Error(`Response status: ${response.status}`);
-        }
+Add newly fetched messages to the list of stored messages. 
+and render all messages
+*/
+const keepFetchingMessages = async (intervalMS) => {
+    const lastMessageTime =
+        state.messages.length > 0
+            ? state.messages[state.messages.length - 1].timestamp
+            : null;
+    const queryString = lastMessageTime ? `?since=${lastMessageTime}` : "";
+    const url = `${BACKEND_URL}/${queryString}`;
+    const rawResponse = await fetch(url);
+    const response = await rawResponse.json();
+    state.messages.push(...response);
+    render();
+    setTimeout(keepFetchingMessages, intervalMS);
+};
 
-        const messages = await response.json();
-        console.log(messages);
-        chatStreamDiv.innerHTML = "";
-
-        messages.forEach((message) => {
-            chatStreamDiv.appendChild(createChatEntry(message));
-        });
-    } catch (e) {
-        alert(e.message);
-    }
+// TODO: render only new elements
+async function render() {
+    const messageEntries = state.messages.map((message) => {
+        return createChatEntry(message);
+    });
+    chatStreamDiv.replaceChildren(...messageEntries);
 }
 
 function createChatEntry({ username, msg_body, timestamp }) {
@@ -75,4 +89,4 @@ function createChatEntry({ username, msg_body, timestamp }) {
     return card;
 }
 
-displayAllMessages();
+keepFetchingMessages(100);

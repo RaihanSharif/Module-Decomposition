@@ -10,31 +10,31 @@ const dummyData = [
         id: randomUUID(),
         username: "asdf",
         msg_body: "this is a random message",
-        timestamp: new Date().toISOString(),
+        timestamp: 1790004060770,
     },
     {
         id: randomUUID(),
         username: "razz",
         msg_body: "hahasfesafae",
-        timestamp: new Date().toISOString(),
+        timestamp: 1790004060870,
     },
     {
         id: randomUUID(),
         username: "shazzman",
         msg_body: "ret35gvre",
-        timestamp: new Date().toISOString(),
+        timestamp: 1790004060970,
     },
     {
         id: randomUUID(),
         username: "wtf",
         msg_body: "ergs45sdgsdr",
-        timestamp: new Date().toISOString(),
+        timestamp: 1790004061070,
     },
     {
         id: randomUUID(),
         username: "lol",
         msg_body: "sdrgsdrg",
-        timestamp: new Date().toISOString(),
+        timestamp: 1790004061170,
     },
 ];
 
@@ -77,7 +77,7 @@ function addMessage({ username, msg_body }) {
         id: randomUUID(),
         username,
         msg_body,
-        timestamp: new Date().toISOString(),
+        timestamp: Date.now(),
     };
 
     messages.push(message);
@@ -85,11 +85,18 @@ function addMessage({ username, msg_body }) {
 }
 
 /**
+ * Returns stored messages filtered by timestamp
  *
- * @returns {Message[]} all saved messages
+ * @param {number} timestamp
+ * @returns {Message[]} messages to send
  */
-function getAllMessages() {
+function getMessages(timestamp) {
+    if (timestamp) {
+        console.log("returning filtered messages");
+        return messages.filter((message) => message.timestamp > timestamp);
+    }
+    console.log("returning all messages");
     return messages;
 }
 
-export { addMessage, getAllMessages };
+export { addMessage, getMessages };
