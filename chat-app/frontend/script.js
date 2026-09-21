@@ -1,7 +1,8 @@
 const chatStreamDiv = document.querySelector(".chat-stream");
 const form = document.querySelector(".chat-input");
 
-const BACKEND_URL = "http://localhost:3000";
+const BACKEND_URL =
+    "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy/";
 
 form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -15,7 +16,7 @@ async function sendMessage() {
     const message = { username: username, msg_body: msg_body };
 
     try {
-        const response = await fetch("http://localhost:3000/", {
+        const response = await fetch(BACKEND_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(message),
