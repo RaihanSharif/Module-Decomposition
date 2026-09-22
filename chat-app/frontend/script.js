@@ -42,10 +42,13 @@ const keepFetchingMessages = async () => {
             : "?wait=true";
 
     const url = `${BACKEND_URL}/${queryString}`;
+
     const rawResponse = await fetch(url);
     const response = await rawResponse.json();
+
     response.forEach(handleServerUpdate);
-    setTimeout(keepFetchingMessages, 100);
+
+    keepFetchingMessages();
 };
 
 function handleServerUpdate(payload) {
