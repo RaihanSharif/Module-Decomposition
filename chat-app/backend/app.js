@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 
 import { addMessage, getMessages, addReaction } from "./model.js";
+import { NotFoundError, ValidationError } from "./errorClasses.js";
 const app = express();
 
 app.use(cors());
@@ -44,36 +45,34 @@ app.get("/", (req, res) => {
 });
 
 app.post("/", (req, res) => {
-    try {
-        const message = addMessage({
-            username: req.body.username,
-            msg_body: req.body.msg_body,
-        });
+    const message = addMessage({
+        username: req.body.username,
+        msg_body: req.body.msg_body,
+    });
 
-        // wrap the message with a command type before putting in callback list
-        // so when client gets data, can process accordingly
-        const event = { command: "new-message", message: message };
+    // wrap the message with a command type before putting in callback list
+    // so when client gets data, can process accordingly
+    const event = { command: "new-message", message: message };
 
-        while (callbacksForNewMessages.length > 0) {
-            const callback = callbacksForNewMessages.pop();
-            callback([event]);
-        }
-
-        // client knows it's a message, doesn't need command type
-        res.json(event);
-    } catch (e) {
-        res.status(400).json({ error: e.message });
+    while (callbacksForNewMessages.length > 0) {
+        const callback = callbacksForNewMessages.pop();
+        callback([event]);
     }
+
+    res.json(event);
 });
 
 app.post("/react", (req, res) => {
-    const data = addReaction(Number(req.body.id), req.body.action);
-
-    if (!data) {
-        return res
-            .status(404)
-            .json({ error: "Message not found or invalid action" });
+    const id = Number(req.body.id);
+    if (!Number.isInteger(id) || id < 0) {
+        throw new ValidationError("id number be a non-negative number");
     }
+
+    if (req.body.action !== "like" && req.body.action !== "dislike") {
+        throw new ValidationError("Invalid reaction");
+    }
+
+    const data = addReaction(Number(req.body.id), req.body.action);
 
     const event = { command: "reaction-update", message: data };
 
@@ -83,6 +82,20 @@ app.post("/react", (req, res) => {
     }
 
     res.json(event);
+});
+
+app.use((err, req, res, next) => {
+    if (err instanceof ValidationError) {
+        return res.status(400).json({ error: err.message });
+    }
+
+    if (err instanceof NotFoundError) {
+        return res.status(404).json({ error: err.message });
+    }
+
+    if (err instanceof Error) {
+        return res.status(500).json({ error: "Internal server error" });
+    }
 });
 
 app.listen(PORT, () => {

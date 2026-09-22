@@ -1,3 +1,4 @@
+import { NotFoundError, ValidationError } from "./errorClasses.js";
 import { Message } from "./Message.js";
 
 const messages = [];
@@ -26,25 +27,27 @@ messages.push(...dummyData);
  */
 function addMessage({ username, msg_body }) {
     if (!username) {
-        throw new Error("username is required");
+        throw new ValidationError("username is required");
     }
 
     if (!msg_body) {
-        throw new Error("msg_body is required");
+        throw new ValidationError("msg_body is required");
     }
 
     if (typeof username !== "string" || typeof msg_body !== "string") {
-        throw new Error("username and body must be strings");
+        throw new ValidationError("username and body must be strings");
     }
 
     username = username?.trim();
     msg_body = msg_body?.trim();
 
     if (!username || username.length > MAX_USERNAME) {
-        throw new Error(`username must be 1-${MAX_USERNAME} characters`);
+        throw new ValidationError(
+            `username must be 1-${MAX_USERNAME} characters`,
+        );
     }
     if (!msg_body || msg_body.length > MAX_BODY) {
-        throw new Error(`body must be 1-${MAX_BODY} characters`);
+        throw new ValidationError(`body must be 1-${MAX_BODY} characters`);
     }
 
     const message = new Message(username, msg_body);
@@ -65,7 +68,7 @@ function getMessages(id) {
     }
 
     if (!Number.isInteger(id) || id < 0) {
-        throw new Error("id must be a non-negative number");
+        throw new ValidationError("id must be a non-negative number");
     }
 
     return messages.filter((message) => message.id > id);
@@ -75,21 +78,19 @@ function getMessages(id) {
  * Like or dislike a single message.
  *
  * @param {number} messageId id of message to react to
- * @param {*} action type of reaction currently "like" "dislike"
+ * @param {string} action type of reaction currently "like" "dislike"
  * @returns {Message} the message with updated likes/dislikes
  */
 function addReaction(messageId, action) {
     const message = messages.find((m) => m.id === messageId);
     if (!message) {
-        throw new Error("Could not find message");
+        throw new NotFoundError("Could not find message");
     }
 
     if (action === "like") {
         message.likes = (message.likes ?? 0) + 1;
     } else if (action === "dislike") {
         message.dislikes = (message.dislikes ?? 0) + 1;
-    } else {
-        throw new Error("invalid reaction");
     }
 
     return message;
