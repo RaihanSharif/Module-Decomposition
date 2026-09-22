@@ -1,3 +1,5 @@
+import { HttpError } from "./HttpError.js";
+
 const chatStreamDiv = document.querySelector(".chat-stream");
 const form = document.querySelector(".chat-input");
 
@@ -21,15 +23,11 @@ async function sendMessage() {
     const message = { username: username, msg_body: msg_body };
 
     try {
-        const response = await fetch(`{BACKEND_URL}/messages`, {
+        await chatRequest(`${BACKEND_URL}/messages`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(message),
         });
-
-        if (!response.ok) {
-            throw new Error(`did not save to db`);
-        }
     } catch (e) {
         alert(e.message);
     }
@@ -43,10 +41,14 @@ const keepFetchingMessages = async () => {
 
     const url = `${BACKEND_URL}/messages${queryString}`;
 
-    const rawResponse = await fetch(url);
-    const response = await rawResponse.json();
-
-    response.forEach(handleServerUpdate);
+    try {
+        const messages = await chatRequest(url);
+        messages.forEach(handleServerUpdate);
+    } catch (e) {
+        console.error("Polling failed: ", e);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return keepFetchingMessages();
+    }
 
     keepFetchingMessages();
 };
@@ -57,7 +59,6 @@ function handleServerUpdate(payload) {
         state.lastMessageId = payload.message.id;
         console.log(state.lastMessageId);
     } else if (payload.command === "reaction-update") {
-        console.log(payload.message.id);
         const message = state.messages.find((m) => m.id === payload.message.id);
         if (message) {
             message.likes = payload.message.likes;
@@ -84,7 +85,7 @@ chatStreamDiv.addEventListener("click", async (event) => {
         const responseEvent = await reactToMessage(messageId, action);
         handleServerUpdate(responseEvent);
     } catch (e) {
-        alert(`${e.message}. could not react!`);
+        alert(e.message);
     }
 });
 
@@ -135,19 +136,32 @@ function createChatEntry({
  * @param {string} action type of reaction (like or dislike initially)
  */
 async function reactToMessage(messageId, action) {
+    return await chatRequest(`${BACKEND_URL}/reactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: messageId, action: action }),
+    });
+}
+
+async function chatRequest(url, options) {
+    const response = await fetch(url, options);
+
+    let data;
+
     try {
-        const response = await fetch(`${BACKEND_URL}/reactions`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: messageId, action: action }),
-        });
-        if (!response.ok) {
-            throw new Error(`${response.status}: could not get data`);
-        }
-        return await response.json();
-    } catch (e) {
-        throw new Error(e.message);
+        data = await response.json();
+    } catch {
+        data = null;
     }
+
+    if (!response.ok) {
+        throw new HttpError(
+            response.status,
+            data?.error ?? "Something went wrong",
+        );
+    }
+
+    return data;
 }
 
 keepFetchingMessages();
