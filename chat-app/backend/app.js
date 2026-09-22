@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 const callbacksForNewMessages = [];
 
-app.get("/", (req, res) => {
+app.get("/messages", (req, res) => {
     const wait = req.query.wait === "true";
     let newMessages = getMessages();
     if (req.query.since) {
@@ -44,7 +44,7 @@ app.get("/", (req, res) => {
     });
 });
 
-app.post("/", (req, res) => {
+app.post("/messages", (req, res) => {
     const message = addMessage({
         username: req.body.username,
         msg_body: req.body.msg_body,
@@ -62,7 +62,7 @@ app.post("/", (req, res) => {
     res.json(event);
 });
 
-app.post("/react", (req, res) => {
+app.post("/reactions", (req, res) => {
     const id = Number(req.body.id);
     if (!Number.isInteger(id) || id < 0) {
         throw new ValidationError("id number be a non-negative number");

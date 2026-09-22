@@ -21,7 +21,7 @@ async function sendMessage() {
     const message = { username: username, msg_body: msg_body };
 
     try {
-        const response = await fetch(BACKEND_URL, {
+        const response = await fetch(`{BACKEND_URL}/messages`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(message),
@@ -41,7 +41,7 @@ const keepFetchingMessages = async () => {
             ? `?since=${state.lastMessageId}&wait=true`
             : "?wait=true";
 
-    const url = `${BACKEND_URL}/${queryString}`;
+    const url = `${BACKEND_URL}/messages${queryString}`;
 
     const rawResponse = await fetch(url);
     const response = await rawResponse.json();
@@ -136,7 +136,7 @@ function createChatEntry({
  */
 async function reactToMessage(messageId, action) {
     try {
-        const response = await fetch(`${BACKEND_URL}/react`, {
+        const response = await fetch(`${BACKEND_URL}/reactions`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: messageId, action: action }),
