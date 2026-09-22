@@ -60,12 +60,24 @@ function addMessage({ username, msg_body }) {
  * @returns {Message[]} messages to send
  */
 function getMessages(id) {
-    if (id) {
-        return messages.filter((message) => message.id > id);
+    if (id === undefined) {
+        return messages;
     }
-    return messages;
+
+    if (!Number.isInteger(id) || id < 0) {
+        throw new Error("id must be a non-negative number");
+    }
+
+    return messages.filter((message) => message.id > id);
 }
 
+/**
+ * Like or dislike a single message.
+ *
+ * @param {number} messageId id of message to react to
+ * @param {*} action type of reaction currently "like" "dislike"
+ * @returns {Message} the message with updated likes/dislikes
+ */
 function addReaction(messageId, action) {
     const message = messages.find((m) => m.id === messageId);
     if (!message) {

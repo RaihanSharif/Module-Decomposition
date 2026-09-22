@@ -13,11 +13,12 @@ const PORT = process.env.PORT || 3000;
 
 const callbacksForNewMessages = [];
 
-// if a "since" query is provided send only messages after the timestamp
-// otherwise send all messages
 app.get("/", (req, res) => {
     const wait = req.query.wait === "true";
-    const newMessages = getMessages(Number(req.query.since));
+    let newMessages = getMessages();
+    if (req.query.since) {
+        newMessages = getMessages(Number(req.query.since));
+    }
 
     if (newMessages.length > 0) {
         const msgWithCommand = newMessages.map((msg) => {

@@ -5,7 +5,7 @@ const BACKEND_URL = "http://localhost:3000";
 
 const state = {
     messages: [],
-    lastMessageId: -1,
+    lastMessageId: 0,
 };
 
 form.addEventListener("submit", (event) => {
@@ -52,6 +52,7 @@ function handleServerUpdate(payload) {
     if (payload.command === "new-message") {
         state.messages.push(payload.message);
         state.lastMessageId = payload.message.id;
+        console.log(state.lastMessageId);
     } else if (payload.command === "reaction-update") {
         console.log(payload.message.id);
         const message = state.messages.find((m) => m.id === payload.message.id);
