@@ -3,7 +3,8 @@ import { HttpError } from "./HttpError.js";
 const chatStreamDiv = document.querySelector(".chat-stream");
 const form = document.querySelector(".chat-input");
 
-const BACKEND_URL = "http://localhost:3000";
+const BACKEND_URL =
+    "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy/";
 
 const state = {
     messages: [],
