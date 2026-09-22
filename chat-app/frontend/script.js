@@ -5,6 +5,7 @@ const BACKEND_URL = "http://localhost:3000";
 
 const state = {
     messages: [],
+    lastMessageId: -1,
 };
 
 form.addEventListener("submit", (event) => {
@@ -35,12 +36,10 @@ async function sendMessage() {
 }
 
 const keepFetchingMessages = async () => {
-    const lastMessageId = Math.max(...state.messages.map((item) => item.id));
-
-    console.log(lastMessageId);
-
     const queryString =
-        lastMessageId > 0 ? `?since=${lastMessageId}&wait=true` : "?wait=true";
+        state.lastMessageId > 0
+            ? `?since=${state.lastMessageId}&wait=true`
+            : "?wait=true";
 
     const url = `${BACKEND_URL}/${queryString}`;
     const rawResponse = await fetch(url);
@@ -52,6 +51,7 @@ const keepFetchingMessages = async () => {
 function handleServerUpdate(payload) {
     if (payload.command === "new-message") {
         state.messages.push(payload.message);
+        state.lastMessageId = payload.message.id;
     } else if (payload.command === "reaction-update") {
         console.log(payload.message.id);
         const message = state.messages.find((m) => m.id === payload.message.id);

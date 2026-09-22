@@ -25,6 +25,14 @@ messages.push(...dummyData);
  * @throws {Error} If username or body is missing, not a string, or out of range.
  */
 function addMessage({ username, msg_body }) {
+    if (!username) {
+        throw new Error("username is required");
+    }
+
+    if (!msg_body) {
+        throw new Error("msg_body is required");
+    }
+
     if (typeof username !== "string" || typeof msg_body !== "string") {
         throw new Error("username and body must be strings");
     }
