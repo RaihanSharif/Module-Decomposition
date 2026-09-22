@@ -16,9 +16,8 @@ const callbacksForNewMessages = [];
 // if a "since" query is provided send only messages after the timestamp
 // otherwise send all messages
 app.get("/", (req, res) => {
-    const timestamp = req.query.since;
     const wait = req.query.wait === "true";
-    const newMessages = getMessages(timestamp);
+    const newMessages = getMessages(Number(req.query.since));
 
     if (newMessages.length > 0) {
         const msgWithCommand = newMessages.map((msg) => {
@@ -35,7 +34,6 @@ app.get("/", (req, res) => {
         if (!res.headersSent) res.json(value);
     };
 
-    console.log(`[${Date.now()}] client registered, waiting`);
     callbacksForNewMessages.push(callback);
 
     req.on("close", () => {
@@ -55,9 +53,6 @@ app.post("/", (req, res) => {
         // so when client gets data, can process accordingly
         const event = { command: "new-message", message: message };
 
-        console.log(
-            `[${Date.now()}] broadcasting reaction, ${callbacksForNewMessages.length} clients waiting`,
-        );
         while (callbacksForNewMessages.length > 0) {
             const callback = callbacksForNewMessages.pop();
             callback([event]);
@@ -71,7 +66,7 @@ app.post("/", (req, res) => {
 });
 
 app.post("/react", (req, res) => {
-    const data = addReaction(req.body.id, req.body.action);
+    const data = addReaction(Number(req.body.id), req.body.action);
 
     if (!data) {
         return res
@@ -81,9 +76,6 @@ app.post("/react", (req, res) => {
 
     const event = { command: "reaction-update", message: data };
 
-    console.log(
-        `[${Date.now()}] broadcasting reaction, ${callbacksForNewMessages.length} clients waiting`,
-    );
     while (callbacksForNewMessages.length > 0) {
         const callback = callbacksForNewMessages.pop();
         callback([event]);

@@ -1,5 +1,5 @@
 export class Message {
-    static #nextId = 0;
+    static #nextId = 1;
 
     /**
      *

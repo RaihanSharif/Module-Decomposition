@@ -34,22 +34,13 @@ async function sendMessage() {
     }
 }
 
-/*
-Fetches messages continuously in intervals
-If some messages already fetched, provide timestamp of last messages
-as query paramter "?since=intervalMS"
-
-Add newly fetched messages to the list of stored messages. 
-and render all messages
-*/
 const keepFetchingMessages = async () => {
-    const lastMessageTime =
-        state.messages.length > 0
-            ? state.messages[state.messages.length - 1].timestamp
-            : null;
-    const queryString = lastMessageTime
-        ? `?since=${lastMessageTime}&wait=true`
-        : "?wait=true";
+    const lastMessageId = Math.max(...state.messages.map((item) => item.id));
+
+    console.log(lastMessageId);
+
+    const queryString =
+        lastMessageId > 0 ? `?since=${lastMessageId}&wait=true` : "?wait=true";
 
     const url = `${BACKEND_URL}/${queryString}`;
     const rawResponse = await fetch(url);
@@ -62,6 +53,7 @@ function handleServerUpdate(payload) {
     if (payload.command === "new-message") {
         state.messages.push(payload.message);
     } else if (payload.command === "reaction-update") {
+        console.log(payload.message.id);
         const message = state.messages.find((m) => m.id === payload.message.id);
         if (message) {
             message.likes = payload.message.likes;
@@ -96,7 +88,7 @@ function createChatEntry({
     id,
     username,
     msg_body,
-    timestamp,
+    createdAt,
     likes,
     dislikes,
 }) {
@@ -110,7 +102,7 @@ function createChatEntry({
     bodyElem.textContent = `message: ${msg_body}`;
 
     const timestampElem = document.createElement("p");
-    timestampElem.textContent = `sent: ${new Date(timestamp).toISOString()}`;
+    timestampElem.textContent = `sent: ${createdAt}`;
 
     const likeBtn = document.createElement("button");
     likeBtn.textContent = `likes: ${likes}`;
