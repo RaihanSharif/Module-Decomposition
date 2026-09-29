@@ -99,18 +99,20 @@ const REACTIONS = {
 };
 
 /**
- * React to a message (currently like or dislike).
+ * Adds a reaction (like or dislike) to a message.
  *
- * @param {number} messageId ID of message to react to.
- * @param {string} action "like" or "dislike".
- * @returns {Message} the message with updated likes/dislikes.
- * @throws {ValidationError} if ID is invalid.
- * @throws {NotFoundError} if no message exists with given ID.
- *
+ * @param {number} messageId ID of the message to react to.
+ * @param {"like" | "dislike"} action The reaction to add.
+ * @returns {{ id: number, likes?: number, dislikes?: number }}
+ *   The message id and its updated count for the given reaction.
+ * @throws {ValidationError} if `action` is not a known reaction.
+ * @throws {NotFoundError} if no message exists with the given ID.
  */
 function addReaction(messageId, action) {
-    if (!Object.hasOwn(REACTIONS, action)) {
-        throw new ValidationError(`Unknown reaction type: ${action}`);
+    if (typeof action !== "string" || !Object.hasOwn(REACTIONS, action)) {
+        throw new ValidationError(
+            `Unknown reaction type: ${String(action).slice(0, 50)}`,
+        );
     }
 
     const { reactionType, event } = REACTIONS[action];

@@ -23,19 +23,10 @@ app.post("/messages", (req, res) => {
 });
 
 app.post("/reactions", (req, res) => {
-    const id = Number(req.body.id);
-
-    if (typeof id !== "number") {
-        throw new ValidationError("The id must be numeric");
+    const id = toInteger(req.body.id);
+    if (id === null) {
+        throw new ValidationError("id must be a non-negative integer");
     }
-    if (!Number.isInteger(id) || id < 0) {
-        throw new ValidationError("id number must be a non-negative number");
-    }
-
-    if (req.body.action !== "like" && req.body.action !== "dislike") {
-        throw new ValidationError("Invalid reaction");
-    }
-
     res.json(addReaction(id, req.body.action));
 });
 
@@ -72,6 +63,14 @@ app.use((err, req, res, next) => {
         return res.status(500).json({ error: "Internal server error" });
     }
 });
+
+function toInteger(value) {
+    if (typeof value !== "string" || !/^\d+$/.test(value)) {
+        return null;
+    }
+    const n = Number(value);
+    return Number.isSafeInteger(n) ? n : null;
+}
 
 app.listen(PORT, () => {
     console.log(`chat app listening on port ${PORT}`);
