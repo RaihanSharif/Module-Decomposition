@@ -19,10 +19,7 @@ app.get("/messages", (req, res) => {
 });
 
 app.post("/messages", (req, res) => {
-    const message = addMessage({
-        username: req.body.username,
-        msg_body: req.body.msg_body,
-    });
+    const message = addMessage(req.body.username, req.body.msg_body);
 
     res.status(201).json(message);
 });
