@@ -3,12 +3,14 @@ import { HttpError } from "./HttpError.js";
 const chatStreamDiv = document.querySelector(".chat-stream");
 const form = document.querySelector(".chat-input");
 
-const BACKEND_URL =
-    "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy/";
+// const BACKEND_URL =
+//     "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy/";
+
+const BACKEND_URL = "http://localhost:3000";
 
 const state = {
-    messages: [],
-    lastMessageId: 0,
+    messages: new Map(),
+    eventCursor: 0,
 };
 
 form.addEventListener("submit", (event) => {
@@ -54,6 +56,40 @@ const keepFetchingMessages = async () => {
     keepFetchingMessages();
 };
 
+/**
+ *
+ * @param {number} wait how long to wait. no wait or 0 = short polling
+ */
+async function pollEvents(wait) {
+    let queryString = `?after=${state.eventCursor}`;
+    if (wait) {
+        queryString = queryString.concat(`&wait=${wait}`);
+    }
+
+    const url = `${BACKEND_URL}/events${queryString}`;
+    console.log(url);
+
+    try {
+        const response = await chatRequest(url);
+        console.log(response);
+        state.eventCursor = response.cursor;
+        console.log(response.events);
+        handleEvents(response.events);
+    } catch (e) {
+        console.error(e.message);
+    }
+}
+
+function handleEvents(events) {
+    events.forEach((event) => {
+        if (event.type === "message.created") {
+            const message = event.data;
+            state.messages.set(message.id, message);
+        }
+        render();
+    });
+}
+
 function handleServerUpdate(payload) {
     if (payload.command === "new-message") {
         state.messages.push(payload.message);
@@ -71,7 +107,9 @@ function handleServerUpdate(payload) {
 
 // TODO: render only new elements
 async function render() {
-    const messageEntries = state.messages.map((message) => {
+    console.log("rendering...");
+    const messages = state.messages.values();
+    const messageEntries = messages.map((message) => {
         return createChatEntry(message);
     });
     chatStreamDiv.replaceChildren(...messageEntries);
@@ -165,4 +203,6 @@ async function chatRequest(url, options) {
     return data;
 }
 
-keepFetchingMessages();
+// keepFetchingMessages();
+
+pollEvents();
