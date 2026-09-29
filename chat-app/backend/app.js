@@ -4,7 +4,7 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
 import express from "express";
 import cors from "cors";
 
-import { addMessage, getMessages, addReaction } from "./model.js";
+import { addMessage, getMessages, addReaction, eventStream } from "./model.js";
 import { NotFoundError, ValidationError } from "./errorClasses.js";
 const app = express();
 
@@ -15,33 +15,7 @@ const PORT = process.env.PORT || 3000;
 const callbacksForNewMessages = [];
 
 app.get("/messages", (req, res) => {
-    const wait = req.query.wait === "true";
-    let newMessages = getMessages();
-    if (req.query.since) {
-        newMessages = getMessages(Number(req.query.since));
-    }
-
-    if (newMessages.length > 0) {
-        const msgWithCommand = newMessages.map((msg) => {
-            return { command: "new-message", message: msg };
-        });
-        return res.json(msgWithCommand);
-    }
-
-    if (!wait) {
-        return res.json([]);
-    }
-
-    const callback = (value) => {
-        if (!res.headersSent) res.json(value);
-    };
-
-    callbacksForNewMessages.push(callback);
-
-    req.on("close", () => {
-        const idx = callbacksForNewMessages.indexOf(callback);
-        if (idx !== -1) callbacksForNewMessages.splice(idx, 1);
-    });
+    res.json(getMessages());
 });
 
 app.post("/messages", (req, res) => {
@@ -50,16 +24,7 @@ app.post("/messages", (req, res) => {
         msg_body: req.body.msg_body,
     });
 
-    // wrap the message with a command type before putting in callback list
-    // so when client gets data, can process accordingly
-    const event = { command: "new-message", message: message };
-
-    while (callbacksForNewMessages.length > 0) {
-        const callback = callbacksForNewMessages.pop();
-        callback([event]);
-    }
-
-    res.json(event);
+    res.status(201).json(message);
 });
 
 app.post("/reactions", (req, res) => {
@@ -82,6 +47,26 @@ app.post("/reactions", (req, res) => {
     }
 
     res.json(event);
+});
+
+// events need a since and a wait for long polling
+app.get("/events", async (req, res) => {
+    const after = Number(req.query.after ?? 0);
+    const wait = Number(req.query.wait ?? 0);
+
+    if (wait === 0) {
+        const events = eventStream.getAfter(after);
+        const cursor =
+            events.length > 0 ? events[events.length - 1].sequence : after;
+
+        return res.json({ cursor, events });
+    }
+
+    const events = await eventStream.waitForEvents(after, wait * 1000);
+    const cursor =
+        events.length > 0 ? events[events.length - 1].sequence : after;
+
+    res.json({ cursor, events });
 });
 
 app.use((err, req, res, next) => {

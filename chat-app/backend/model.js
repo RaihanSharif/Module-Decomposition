@@ -1,19 +1,22 @@
 import { NotFoundError, ValidationError } from "./errorClasses.js";
 import { Message } from "./Message.js";
+import { EventStream } from "./EventStream.js";
 
 const messages = [];
+const eventStream = new EventStream();
 
 const MAX_USERNAME = 100;
 const MAX_BODY = 500;
 
 const dummyData = [];
-dummyData.push(new Message("user1", "message1"));
-dummyData.push(new Message("anotherUser", "second message"));
-dummyData.push(new Message("b", "third message"));
-dummyData.push(new Message("c", "fourth message"));
-dummyData.push(new Message("d", "fifth message"));
+dummyData.push({ username: "user1", msg_body: "abcd" });
+dummyData.push({ username: "user2", msg_body: "xyz" });
+dummyData.push({ username: "user3", msg_body: "lmno" });
+dummyData.push({ username: "user4", msg_body: "pqrst" });
 
-messages.push(...dummyData);
+dummyData.forEach(({ username, msg_body }) => {
+    addMessage(username, msg_body);
+});
 
 /**
  * Creates a message, stores it, and returns it.
@@ -53,6 +56,7 @@ function addMessage(username, msg_body) {
     const message = new Message(username, msg_body);
 
     messages.push(message);
+    eventStream.append("message.created", message);
     return message;
 }
 
@@ -111,4 +115,4 @@ function addReaction(messageId, action) {
     return message;
 }
 
-export { addMessage, getMessage, getMessages, addReaction };
+export { addMessage, getMessage, getMessages, addReaction, eventStream };
