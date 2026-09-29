@@ -25,8 +25,9 @@ async function sendMessage() {
 
     const message = { username: username, msg_body: msg_body };
 
+    let responseMsg;
     try {
-        await chatRequest(`${BACKEND_URL}/messages`, {
+        responseMsg = await chatRequest(`${BACKEND_URL}/messages`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(message),
@@ -34,6 +35,9 @@ async function sendMessage() {
     } catch (e) {
         alert(e.message);
     }
+
+    // appends the sent message to the message list in in DOM.
+    appendMessage(responseMsg);
 }
 
 const keepFetchingMessages = async () => {
@@ -106,13 +110,17 @@ function handleServerUpdate(payload) {
 }
 
 // TODO: render only new elements
-async function render() {
-    console.log("rendering...");
+function render() {
     const messages = state.messages.values();
     const messageEntries = messages.map((message) => {
         return createChatEntry(message);
     });
     chatStreamDiv.replaceChildren(...messageEntries);
+}
+
+function appendMessage(message) {
+    const msgEntry = createChatEntry(message);
+    chatStreamDiv.appendChild(msgEntry);
 }
 
 chatStreamDiv.addEventListener("click", async (event) => {
