@@ -93,6 +93,11 @@ function validateId(id) {
     }
 }
 
+const REACTIONS = {
+    like: { reactionType: "likes", event: "message.liked" },
+    dislike: { reactionType: "dislikes", event: "message.disliked" },
+};
+
 /**
  * React to a message (currently like or dislike).
  *
@@ -104,15 +109,25 @@ function validateId(id) {
  *
  */
 function addReaction(messageId, action) {
-    const message = getMessage(messageId);
-
-    if (action === "like") {
-        message.likes = (message.likes ?? 0) + 1;
-    } else if (action === "dislike") {
-        message.dislikes = (message.dislikes ?? 0) + 1;
+    if (!Object.hasOwn(REACTIONS, action)) {
+        throw new ValidationError(`Unknown reaction type: ${action}`);
     }
 
-    return message;
+    const { reactionType, event } = REACTIONS[action];
+
+    const message = getMessage(messageId);
+    message[reactionType] = (message[reactionType] ?? 0) + 1;
+
+    const data = { id: message.id, [reactionType]: message[reactionType] };
+    eventStream.append(event, data);
+    return data;
 }
 
-export { addMessage, getMessage, getMessages, addReaction, eventStream };
+export {
+    addMessage,
+    getMessage,
+    getMessages,
+    addReaction,
+    eventStream,
+    REACTIONS,
+};

@@ -39,27 +39,6 @@ async function sendMessage() {
     // appends the sent message to the message list in in DOM.
     appendMessage(responseMsg);
 }
-
-const keepFetchingMessages = async () => {
-    const queryString =
-        state.lastMessageId > 0
-            ? `?since=${state.lastMessageId}&wait=true`
-            : "?wait=true";
-
-    const url = `${BACKEND_URL}/messages${queryString}`;
-
-    try {
-        const messages = await chatRequest(url);
-        messages.forEach(handleServerUpdate);
-    } catch (e) {
-        console.error("Polling failed: ", e);
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        return keepFetchingMessages();
-    }
-
-    keepFetchingMessages();
-};
-
 /**
  *
  * @param {number} wait how long to wait. no wait or 0 = short polling
@@ -91,9 +70,24 @@ async function pollEvents(wait) {
 
 function handleEvents(events) {
     events.forEach((event) => {
+        const message = event.data;
         if (event.type === "message.created") {
-            const message = event.data;
             state.messages.set(message.id, message);
+        }
+        if (event.type === "message.liked") {
+            console.log(event);
+            if (message) {
+                const stateMsg = state.messages.get(message.id);
+                stateMsg.likes = message.likes;
+            }
+        }
+
+        if (event.type === "message.disliked") {
+            console.log(event);
+            if (message) {
+                const stateMsg = state.messages.get(message.id);
+                stateMsg.dislikes = message.dislikes;
+            }
         }
         render();
     });

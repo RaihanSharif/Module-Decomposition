@@ -12,8 +12,6 @@ app.use(cors());
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
-const callbacksForNewMessages = [];
-
 app.get("/messages", (req, res) => {
     res.json(getMessages());
 });
@@ -26,24 +24,19 @@ app.post("/messages", (req, res) => {
 
 app.post("/reactions", (req, res) => {
     const id = Number(req.body.id);
+
+    if (typeof id !== "number") {
+        throw new ValidationError("The id must be numeric");
+    }
     if (!Number.isInteger(id) || id < 0) {
-        throw new ValidationError("id number be a non-negative number");
+        throw new ValidationError("id number must be a non-negative number");
     }
 
     if (req.body.action !== "like" && req.body.action !== "dislike") {
         throw new ValidationError("Invalid reaction");
     }
 
-    const data = addReaction(Number(req.body.id), req.body.action);
-
-    const event = { command: "reaction-update", message: data };
-
-    while (callbacksForNewMessages.length > 0) {
-        const callback = callbacksForNewMessages.pop();
-        callback([event]);
-    }
-
-    res.json(event);
+    res.json(addReaction(id, req.body.action));
 });
 
 // events need a since and a wait for long polling
