@@ -71,6 +71,7 @@ async function pollEvents(wait) {
     }
 
     const url = `${BACKEND_URL}/events${queryString}`;
+    console.log(`polling...`);
     console.log(url);
 
     try {
@@ -80,8 +81,12 @@ async function pollEvents(wait) {
         console.log(response.events);
         handleEvents(response.events);
     } catch (e) {
-        console.error(e.message);
+        console.error("Polling failed: ", e);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return pollEvents(wait);
     }
+
+    pollEvents(wait);
 }
 
 function handleEvents(events) {
@@ -213,4 +218,4 @@ async function chatRequest(url, options) {
 
 // keepFetchingMessages();
 
-pollEvents();
+pollEvents(10);
