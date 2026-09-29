@@ -4,7 +4,7 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
 import express from "express";
 import cors from "cors";
 
-import { addMessage, getMessages, addReaction } from "./model.js";
+import { addMessage, getMessages, addReaction, eventStream } from "./model.js";
 import { NotFoundError, ValidationError } from "./errorClasses.js";
 const app = express();
 
@@ -12,76 +12,48 @@ app.use(cors());
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
-const callbacksForNewMessages = [];
-
 app.get("/messages", (req, res) => {
-    const wait = req.query.wait === "true";
-    let newMessages = getMessages();
-    if (req.query.since) {
-        newMessages = getMessages(Number(req.query.since));
-    }
-
-    if (newMessages.length > 0) {
-        const msgWithCommand = newMessages.map((msg) => {
-            return { command: "new-message", message: msg };
-        });
-        return res.json(msgWithCommand);
-    }
-
-    if (!wait) {
-        return res.json([]);
-    }
-
-    const callback = (value) => {
-        if (!res.headersSent) res.json(value);
-    };
-
-    callbacksForNewMessages.push(callback);
-
-    req.on("close", () => {
-        const idx = callbacksForNewMessages.indexOf(callback);
-        if (idx !== -1) callbacksForNewMessages.splice(idx, 1);
-    });
+    res.json(getMessages());
 });
 
 app.post("/messages", (req, res) => {
-    const message = addMessage({
-        username: req.body.username,
-        msg_body: req.body.msg_body,
-    });
+    const message = addMessage(req.body.username, req.body.msg_body);
 
-    // wrap the message with a command type before putting in callback list
-    // so when client gets data, can process accordingly
-    const event = { command: "new-message", message: message };
-
-    while (callbacksForNewMessages.length > 0) {
-        const callback = callbacksForNewMessages.pop();
-        callback([event]);
-    }
-
-    res.json(event);
+    res.status(201).json(message);
 });
 
 app.post("/reactions", (req, res) => {
-    const id = Number(req.body.id);
-    if (!Number.isInteger(id) || id < 0) {
-        throw new ValidationError("id number be a non-negative number");
+    const id = toInteger(req.body.id);
+    if (id === null) {
+        throw new ValidationError("id must be a non-negative integer");
+    }
+    res.json(addReaction(id, req.body.action));
+});
+
+/**
+ * Event streaming endpoint. Sends a list of events (new message, like, dislike) and
+ * a cursor to the most recently sent event.
+ * if request contains "after" query, sends events with sequence number higher than this.
+ * if wait is supplied, does short polling, otherwise long polling that waits for the specified
+ * amount of time in seconds.
+ */
+app.get("/events", async (req, res) => {
+    const after = toInteger(req.query.after) ?? 0;
+    const wait = toInteger(req.query.wait) ?? 0;
+
+    if (wait === 0) {
+        const events = eventStream.getAfter(after);
+        const cursor =
+            events.length > 0 ? events[events.length - 1].sequence : after;
+
+        return res.json({ cursor, events });
     }
 
-    if (req.body.action !== "like" && req.body.action !== "dislike") {
-        throw new ValidationError("Invalid reaction");
-    }
+    const events = await eventStream.waitForEvents(after, wait * 1000);
+    const cursor =
+        events.length > 0 ? events[events.length - 1].sequence : after;
 
-    const data = addReaction(Number(req.body.id), req.body.action);
-
-    const event = { command: "reaction-update", message: data };
-
-    while (callbacksForNewMessages.length > 0) {
-        const callback = callbacksForNewMessages.pop();
-        callback([event]);
-    }
-
-    res.json(event);
+    res.json({ cursor, events });
 });
 
 app.use((err, req, res, next) => {
@@ -97,6 +69,14 @@ app.use((err, req, res, next) => {
         return res.status(500).json({ error: "Internal server error" });
     }
 });
+
+function toInteger(value) {
+    if (typeof value !== "string" || !/^\d+$/.test(value)) {
+        return null;
+    }
+    const n = Number(value);
+    return Number.isSafeInteger(n) ? n : null;
+}
 
 app.listen(PORT, () => {
     console.log(`chat app listening on port ${PORT}`);

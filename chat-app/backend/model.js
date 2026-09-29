@@ -1,31 +1,34 @@
 import { NotFoundError, ValidationError } from "./errorClasses.js";
 import { Message } from "./Message.js";
+import { EventStream } from "./EventStream.js";
 
 const messages = [];
+const eventStream = new EventStream();
 
 const MAX_USERNAME = 100;
 const MAX_BODY = 500;
 
 const dummyData = [];
-dummyData.push(new Message("user1", "message1"));
-dummyData.push(new Message("anotherUser", "second message"));
-dummyData.push(new Message("b", "third message"));
-dummyData.push(new Message("c", "fourth message"));
-dummyData.push(new Message("d", "fifth message"));
+dummyData.push({ username: "user1", msg_body: "abcd" });
+dummyData.push({ username: "user2", msg_body: "xyz" });
+dummyData.push({ username: "user3", msg_body: "lmno" });
+dummyData.push({ username: "user4", msg_body: "pqrst" });
 
-messages.push(...dummyData);
+dummyData.forEach(({ username, msg_body }) => {
+    addMessage(username, msg_body);
+});
 
 /**
  * Creates a message, stores it, and returns it.
  * The id and timestamp are generated here; callers only supply content.
  *
- * @param {Object} input
- * @param {string} input.username - 1-100 characters.
- * @param {string} input.msg_body - 1-500 characters.
+
+ * @param {string} username - usrname of message creator. 1-100 characters.
+ * @param {string} input.msg_body - Body of the message. 1-500 characters.
  * @returns {Message} The stored message.
- * @throws {Error} If username or body is missing, not a string, or out of range.
+ * @throws {ValidationError} If username or body is missing, not a string, or out of range.
  */
-function addMessage({ username, msg_body }) {
+function addMessage(username, msg_body) {
     if (!username) {
         throw new ValidationError("username is required");
     }
@@ -53,47 +56,80 @@ function addMessage({ username, msg_body }) {
     const message = new Message(username, msg_body);
 
     messages.push(message);
+    eventStream.append("message.created", message);
     return message;
 }
 
 /**
- * Returns stored messages filtered by timestamp
+ * Returns all messages in system.
  *
- * @param {number} messages with id > supplied id
- * @returns {Message[]} messages to send
+ * @returns {Message[]} An array of Message objects.
  */
-function getMessages(id) {
-    if (id === undefined) {
-        return messages;
-    }
+function getMessages() {
+    return messages;
+}
 
+/**
+ * Return the message with the provided ID.
+ *
+ * @param {number} id - ID of message to return.
+ * @returns {Message} The requested message.
+ * @throws {ValidationError}  If id is invalid.
+ * @throws {NotFoundError} If no messages exists with given ID.
+ */
+function getMessage(id) {
+    validateId(id);
+
+    const message = messages.find((message) => message.id === id);
+    if (!message) {
+        throw new NotFoundError("could not find message");
+    }
+    return message;
+}
+
+function validateId(id) {
     if (!Number.isInteger(id) || id < 0) {
         throw new ValidationError("id must be a non-negative number");
     }
-
-    return messages.filter((message) => message.id > id);
 }
+
+const REACTIONS = {
+    like: { reactionField: "likes", event: "message.liked" },
+    dislike: { reactionField: "dislikes", event: "message.disliked" },
+};
 
 /**
- * Like or dislike a single message.
+ * Adds a reaction (like or dislike) to a message.
  *
- * @param {number} messageId id of message to react to
- * @param {string} action type of reaction currently "like" "dislike"
- * @returns {Message} the message with updated likes/dislikes
+ * @param {number} messageId ID of the message to react to.
+ * @param {"like" | "dislike"} action The reaction to add.
+ * @returns {{ id: number, likes?: number, dislikes?: number }}
+ *   The message id and its updated count for the given reaction.
+ * @throws {ValidationError} if `action` is not a known reaction.
+ * @throws {NotFoundError} if no message exists with the given ID.
  */
 function addReaction(messageId, action) {
-    const message = messages.find((m) => m.id === messageId);
-    if (!message) {
-        throw new NotFoundError("Could not find message");
+    if (typeof action !== "string" || !Object.hasOwn(REACTIONS, action)) {
+        throw new ValidationError(
+            `Unknown reaction type: ${String(action).slice(0, 50)}`,
+        );
     }
 
-    if (action === "like") {
-        message.likes = (message.likes ?? 0) + 1;
-    } else if (action === "dislike") {
-        message.dislikes = (message.dislikes ?? 0) + 1;
-    }
+    const { reactionField, event } = REACTIONS[action];
 
-    return message;
+    const message = getMessage(messageId);
+    message[reactionField] = (message[reactionField] ?? 0) + 1;
+
+    const data = { id: message.id, [reactionField]: message[reactionField] };
+    eventStream.append(event, data);
+    return data;
 }
 
-export { addMessage, getMessages, addReaction };
+export {
+    addMessage,
+    getMessage,
+    getMessages,
+    addReaction,
+    eventStream,
+    REACTIONS,
+};
