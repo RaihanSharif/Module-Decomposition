@@ -19,13 +19,13 @@ messages.push(...dummyData);
  * Creates a message, stores it, and returns it.
  * The id and timestamp are generated here; callers only supply content.
  *
- * @param {Object} input
- * @param {string} input.username - 1-100 characters.
- * @param {string} input.msg_body - 1-500 characters.
+
+ * @param {string} username - usrname of message creator. 1-100 characters.
+ * @param {string} input.msg_body - Body of the message. 1-500 characters.
  * @returns {Message} The stored message.
- * @throws {Error} If username or body is missing, not a string, or out of range.
+ * @throws {ValidationError} If username or body is missing, not a string, or out of range.
  */
-function addMessage({ username, msg_body }) {
+function addMessage(username, msg_body) {
     if (!username) {
         throw new ValidationError("username is required");
     }
@@ -57,35 +57,50 @@ function addMessage({ username, msg_body }) {
 }
 
 /**
- * Returns stored messages filtered by timestamp
+ * Returns all messages in system.
  *
- * @param {number} messages with id > supplied id
- * @returns {Message[]} messages to send
+ * @returns {Message[]} An array of Message objects.
  */
-function getMessages(id) {
-    if (id === undefined) {
-        return messages;
-    }
-
-    if (!Number.isInteger(id) || id < 0) {
-        throw new ValidationError("id must be a non-negative number");
-    }
-
-    return messages.filter((message) => message.id > id);
+function getMessages() {
+    return messages;
 }
 
 /**
- * Like or dislike a single message.
+ * Return the message with the provided ID.
  *
- * @param {number} messageId id of message to react to
- * @param {string} action type of reaction currently "like" "dislike"
- * @returns {Message} the message with updated likes/dislikes
+ * @param {number} id - ID of message to return.
+ * @returns {Message} The requested message.
+ * @throws {ValidationError}  If id is invalid.
+ * @throws {NotFoundError} If no messages exists with given ID.
+ */
+function getMessage(id) {
+    validateId(id);
+
+    const message = messages.find((message) => message.id === id);
+    if (!message) {
+        throw new NotFoundError("could not find message");
+    }
+    return message;
+}
+
+function validateId(id) {
+    if (!Number.isInteger(id) || id < 0) {
+        throw new ValidationError("id must be a non-negative number");
+    }
+}
+
+/**
+ * React to a message (currently like or dislike).
+ *
+ * @param {number} messageId ID of message to react to.
+ * @param {string} action "like" or "dislike".
+ * @returns {Message} the message with updated likes/dislikes.
+ * @throws {ValidationError} if ID is invalid.
+ * @throws {NotFoundError} if no message exists with given ID.
+ *
  */
 function addReaction(messageId, action) {
-    const message = messages.find((m) => m.id === messageId);
-    if (!message) {
-        throw new NotFoundError("Could not find message");
-    }
+    const message = getMessage(messageId);
 
     if (action === "like") {
         message.likes = (message.likes ?? 0) + 1;
@@ -96,4 +111,4 @@ function addReaction(messageId, action) {
     return message;
 }
 
-export { addMessage, getMessages, addReaction };
+export { addMessage, getMessage, getMessages, addReaction };
