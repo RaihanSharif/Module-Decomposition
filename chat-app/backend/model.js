@@ -94,8 +94,8 @@ function validateId(id) {
 }
 
 const REACTIONS = {
-    like: { reactionType: "likes", event: "message.liked" },
-    dislike: { reactionType: "dislikes", event: "message.disliked" },
+    like: { reactionField: "likes", event: "message.liked" },
+    dislike: { reactionField: "dislikes", event: "message.disliked" },
 };
 
 /**
@@ -115,12 +115,12 @@ function addReaction(messageId, action) {
         );
     }
 
-    const { reactionType, event } = REACTIONS[action];
+    const { reactionField, event } = REACTIONS[action];
 
     const message = getMessage(messageId);
-    message[reactionType] = (message[reactionType] ?? 0) + 1;
+    message[reactionField] = (message[reactionField] ?? 0) + 1;
 
-    const data = { id: message.id, [reactionType]: message[reactionType] };
+    const data = { id: message.id, [reactionField]: message[reactionField] };
     eventStream.append(event, data);
     return data;
 }

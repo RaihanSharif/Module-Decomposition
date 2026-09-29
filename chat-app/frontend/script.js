@@ -19,18 +19,21 @@ form.addEventListener("submit", (event) => {
     form.reset();
 });
 
+/**
+ * Send a message and append it to the messages DOM.
+ * Does not update the messages state or cursor.
+ * That is done by the event polling.
+ */
 async function sendMessage() {
     const username = document.getElementById("username-input").value;
     const msg_body = document.getElementById("message-input").value;
-
-    const message = { username: username, msg_body: msg_body };
 
     let responseMsg;
     try {
         responseMsg = await chatRequest(`${BACKEND_URL}/messages`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(message),
+            body: JSON.stringify({ username, msg_body }),
         });
     } catch (e) {
         alert(e.message);
@@ -39,7 +42,12 @@ async function sendMessage() {
     // appends the sent message to the message list in in DOM.
     appendMessage(responseMsg);
 }
+
 /**
+ * Continuously polls the event stream API for new messages or reactions.
+ * Stores new messages or reactions in state.
+ * If events fetched successfully, the event cursor state is updated.
+ * Retries after 100ms if a request fails.
  *
  * @param {number} wait how long to wait. no wait or 0 = short polling
  */
@@ -50,14 +58,10 @@ async function pollEvents(wait) {
     }
 
     const url = `${BACKEND_URL}/events${queryString}`;
-    console.log(`polling...`);
-    console.log(url);
 
     try {
         const response = await chatRequest(url);
-        console.log(response);
         state.eventCursor = response.cursor;
-        console.log(response.events);
         handleEvents(response.events);
     } catch (e) {
         console.error("Polling failed: ", e);
@@ -68,22 +72,24 @@ async function pollEvents(wait) {
     pollEvents(wait);
 }
 
+/**
+ * Updates message state to match the data from events.
+ * @param {List of events} events - the events to process.
+ */
 function handleEvents(events) {
     events.forEach((event) => {
         const message = event.data;
+
         if (event.type === "message.created") {
             state.messages.set(message.id, message);
         }
         if (event.type === "message.liked") {
-            console.log(event);
             if (message) {
                 const stateMsg = state.messages.get(message.id);
                 stateMsg.likes = message.likes;
             }
         }
-
         if (event.type === "message.disliked") {
-            console.log(event);
             if (message) {
                 const stateMsg = state.messages.get(message.id);
                 stateMsg.dislikes = message.dislikes;
@@ -93,22 +99,7 @@ function handleEvents(events) {
     });
 }
 
-function handleServerUpdate(payload) {
-    if (payload.command === "new-message") {
-        state.messages.push(payload.message);
-        state.lastMessageId = payload.message.id;
-        console.log(state.lastMessageId);
-    } else if (payload.command === "reaction-update") {
-        const message = state.messages.find((m) => m.id === payload.message.id);
-        if (message) {
-            message.likes = payload.message.likes;
-            message.dislikes = payload.message.dislikes;
-        }
-    }
-    render();
-}
-
-// TODO: render only new elements
+// Render all messages.
 function render() {
     const messages = state.messages.values();
     const messageEntries = messages.map((message) => {
@@ -117,11 +108,15 @@ function render() {
     chatStreamDiv.replaceChildren(...messageEntries);
 }
 
+// Append a single message to the current list of messages in the DOM.
 function appendMessage(message) {
     const msgEntry = createChatEntry(message);
     chatStreamDiv.appendChild(msgEntry);
 }
 
+/**
+ * Even listener to handle clicks of like/dislike buttons.
+ */
 chatStreamDiv.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
@@ -129,12 +124,13 @@ chatStreamDiv.addEventListener("click", async (event) => {
 
     try {
         const responseEvent = await reactToMessage(messageId, action);
-        handleServerUpdate(responseEvent);
+        handleEvents([responseEvent]);
     } catch (e) {
         alert(e.message);
     }
 });
 
+// Create a message card to display in DOM.
 function createChatEntry({
     id,
     username,
@@ -177,9 +173,11 @@ function createChatEntry({
 }
 
 /**
+ * Sends the reaction type and the id of the message reacted to.
  *
  * @param {string} messageId message to like or dislike
  * @param {string} action type of reaction (like or dislike initially)
+ * @returns {id, likes | dislikes} Returns the id and the value of the reaction field.
  */
 async function reactToMessage(messageId, action) {
     return await chatRequest(`${BACKEND_URL}/reactions`, {
@@ -210,6 +208,4 @@ async function chatRequest(url, options) {
     return data;
 }
 
-// keepFetchingMessages();
-
-pollEvents(10);
+pollEvents(30);

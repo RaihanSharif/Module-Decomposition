@@ -30,10 +30,16 @@ app.post("/reactions", (req, res) => {
     res.json(addReaction(id, req.body.action));
 });
 
-// events need a since and a wait for long polling
+/**
+ * Event streaming endpoint. Sends a list of events (new message, like, dislike) and
+ * a cursor to the most recently sent event.
+ * if request contains "after" query, sends events with sequence number higher than this.
+ * if wait is supplied, does short polling, otherwise long polling that waits for the specified
+ * amount of time in seconds.
+ */
 app.get("/events", async (req, res) => {
-    const after = Number(req.query.after ?? 0);
-    const wait = Number(req.query.wait ?? 0);
+    const after = toInteger(req.query.after) ?? 0;
+    const wait = toInteger(req.query.wait) ?? 0;
 
     if (wait === 0) {
         const events = eventStream.getAfter(after);
