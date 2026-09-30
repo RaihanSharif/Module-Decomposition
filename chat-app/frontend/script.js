@@ -37,6 +37,7 @@ async function sendMessage() {
         });
     } catch (e) {
         alert(e.message);
+        return;
     }
 
     // appends the sent message to the message list in in DOM.
@@ -95,8 +96,8 @@ function handleEvents(events) {
                 stateMsg.dislikes = message.dislikes;
             }
         }
-        render();
     });
+    render();
 }
 
 // Render all messages.
