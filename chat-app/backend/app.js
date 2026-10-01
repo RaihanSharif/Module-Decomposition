@@ -3,6 +3,8 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
 
 import express from "express";
 import cors from "cors";
+import http from "http";
+import { server as WebSocketServer } from "websocket";
 
 import { addMessage, getMessages, addReaction, eventStream } from "./model.js";
 import { NotFoundError, ValidationError } from "./errorClasses.js";
@@ -56,6 +58,11 @@ app.get("/events", async (req, res) => {
     res.json({ cursor, events });
 });
 
+app.get("/snapshot", (req, res) => {
+    res.json({ cursor: eventStream.sequence, messages: getMessages() });
+    console.log(`sent snapshot`);
+});
+
 app.use((err, req, res, next) => {
     if (err instanceof ValidationError) {
         return res.status(400).json({ error: err.message });
@@ -78,6 +85,24 @@ function toInteger(value) {
     return Number.isSafeInteger(n) ? n : null;
 }
 
-app.listen(PORT, () => {
-    console.log(`chat app listening on port ${PORT}`);
+// WebSocket code
+
+const server = http.createServer(app);
+
+const webSocketServer = new WebSocketServer({
+    httpServer: server,
+});
+
+webSocketServer.on("request", (request) => {
+    const connection = request.accept(null, request.origin);
+
+    const unsubscribe = eventStream.subscribe((event) => {
+        connection.sendUTF(JSON.stringify(event));
+    });
+
+    connection.on("close", () => unsubscribe());
+});
+
+server.listen(PORT, () => {
+    console.log(`chat app server listening on port ${PORT}`);
 });

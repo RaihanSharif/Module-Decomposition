@@ -3,6 +3,7 @@ class EventStream {
         this.events = [];
         this.sequence = 0;
         this.waiters = new Set();
+        this.subscribers = new Set();
     }
 
     /**
@@ -22,7 +23,8 @@ class EventStream {
 
         this.events.push(event);
         this.notifyWaiters();
-
+        console.log(`event added to event stream: ${event.sequence}`);
+        this.notifySubscribers(event);
         return event;
     }
 
@@ -33,6 +35,24 @@ class EventStream {
      */
     getAfter(sequence) {
         return this.events.filter((event) => event.sequence > sequence);
+    }
+
+    subscribe(callback) {
+        // TODO: add the listener's cursor
+        this.subscribers.add(callback);
+        console.log(`subscribed`);
+        return () => this.subscribers.delete(callback);
+    }
+
+    notifySubscribers(event) {
+        for (const callback of this.subscribers) {
+            try {
+                callback(event);
+                console.log(`subscriber notified`);
+            } catch (err) {
+                console.error("subscriber failed", err);
+            }
+        }
     }
 
     /**

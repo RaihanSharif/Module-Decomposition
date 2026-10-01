@@ -3,10 +3,10 @@ import { HttpError } from "./HttpError.js";
 const chatStreamDiv = document.querySelector(".chat-stream");
 const form = document.querySelector(".chat-input");
 
-const BACKEND_URL =
-    "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy";
+// const BACKEND_URL =
+//     "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy";
 
-// const BACKEND_URL = "http://localhost:3000";
+const BACKEND_URL = "http://localhost:3000";
 
 const state = {
     messages: new Map(),
@@ -41,7 +41,7 @@ async function sendMessage() {
     }
 
     // appends the sent message to the message list in in DOM.
-    appendMessage(responseMsg);
+    // appendMessage(responseMsg);
 }
 
 /**
@@ -80,7 +80,6 @@ async function pollEvents(wait) {
 function handleEvents(events) {
     events.forEach((event) => {
         const message = event.data;
-
         if (event.type === "message.created") {
             state.messages.set(message.id, message);
         }
@@ -96,6 +95,7 @@ function handleEvents(events) {
                 stateMsg.dislikes = message.dislikes;
             }
         }
+        state.eventCursor = Number(event.sequence);
     });
     render();
 }
@@ -124,8 +124,7 @@ chatStreamDiv.addEventListener("click", async (event) => {
     const { messageId, action } = button.dataset;
 
     try {
-        const responseEvent = await reactToMessage(messageId, action);
-        handleEvents([responseEvent]);
+        await reactToMessage(messageId, action);
     } catch (e) {
         alert(e.message);
     }
@@ -209,4 +208,34 @@ async function chatRequest(url, options) {
     return data;
 }
 
-pollEvents(30);
+// pollEvents(30);
+
+async function getSnapshot() {
+    console.log(`called snapshot`);
+    const response = await chatRequest("http://localhost:3000/snapshot");
+    const messages = response.messages;
+    messages.forEach((msg) => {
+        state.messages.set(msg.id, msg);
+    });
+    console.log(Array.from(state.messages.values()));
+    state.eventCursor = response.cursor;
+    console.log(state.eventCursor);
+    render();
+}
+
+const socket = new WebSocket("ws://localhost:3000");
+
+socket.addEventListener("open", async (event) => {
+    console.log("connection opened...");
+});
+
+socket.addEventListener("message", (event) => {
+    const message = JSON.parse(event.data);
+    console.log(`on message: `);
+    console.log(message);
+    handleEvents([message]);
+    console.log(`event cursor: ${state.eventCursor}`);
+    console.log(state.messages.get(message.data.id));
+});
+
+getSnapshot();
