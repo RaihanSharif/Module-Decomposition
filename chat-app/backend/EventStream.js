@@ -38,7 +38,6 @@ class EventStream {
     }
 
     subscribe(callback) {
-        // TODO: add the listener's cursor
         const subscriber = {
             cursor: null,
             callback: callback,
