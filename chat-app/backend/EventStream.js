@@ -23,8 +23,8 @@ class EventStream {
 
         this.events.push(event);
         this.notifyWaiters();
-        console.log(`event added to event stream: ${event.sequence}`);
-        this.notifySubscribers(event);
+        // console.log(`event added to event stream: ${event.sequence}`);
+        this.notifySubscribers();
         return event;
     }
 
@@ -37,18 +37,29 @@ class EventStream {
         return this.events.filter((event) => event.sequence > sequence);
     }
 
-    subscribe(callback) {
+    subscribe(cursor = 0, callback) {
         // TODO: add the listener's cursor
-        this.subscribers.add(callback);
+        const subscriber = {
+            cursor,
+            callback: callback,
+        };
+        this.subscribers.add(subscriber);
+        // console.log(`subscribed`);
         console.log(`subscribed`);
-        return () => this.subscribers.delete(callback);
+        return subscriber;
     }
 
-    notifySubscribers(event) {
-        for (const callback of this.subscribers) {
+    unsubscribe(subscriber) {
+        this.subscribers.delete(subscriber);
+        console.log("unsubscribed");
+    }
+
+    notifySubscribers() {
+        for (const subscriber of this.subscribers) {
+            const events = this.getAfter(subscriber.cursor);
             try {
-                callback(event);
-                console.log(`subscriber notified`);
+                subscriber.callback(events);
+                // console.log(`subscriber notified`);
             } catch (err) {
                 console.error("subscriber failed", err);
             }

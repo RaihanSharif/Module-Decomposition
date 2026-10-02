@@ -96,11 +96,18 @@ const webSocketServer = new WebSocketServer({
 webSocketServer.on("request", (request) => {
     const connection = request.accept(null, request.origin);
 
-    const unsubscribe = eventStream.subscribe((event) => {
-        connection.sendUTF(JSON.stringify(event));
+    const subscriber = eventStream.subscribe(0, (events) => {
+        connection.sendUTF(JSON.stringify(events));
     });
 
-    connection.on("close", () => unsubscribe());
+    connection.on("message", (message) => {
+        const data = JSON.parse(message.utf8Data);
+        if (data.type === "ack") {
+            subscriber.cursor = data.cursor;
+        }
+    });
+
+    connection.on("close", () => eventStream.unsubscribe(subscriber));
 });
 
 server.listen(PORT, () => {

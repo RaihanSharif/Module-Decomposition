@@ -7,7 +7,7 @@ const form = document.querySelector(".chat-input");
 //     "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy";
 
 const BACKEND_URL = "http://localhost:3000";
-
+const WS_URL = "ws://localhost:3000";
 const state = {
     messages: new Map(),
     eventCursor: 0,
@@ -28,49 +28,15 @@ async function sendMessage() {
     const username = document.getElementById("username-input").value;
     const msg_body = document.getElementById("message-input").value;
 
-    let responseMsg;
     try {
-        responseMsg = await chatRequest(`${BACKEND_URL}/messages`, {
+        await chatRequest(`${BACKEND_URL}/messages`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, msg_body }),
         });
     } catch (e) {
         alert(e.message);
-        return;
     }
-
-    // appends the sent message to the message list in in DOM.
-    // appendMessage(responseMsg);
-}
-
-/**
- * Continuously polls the event stream API for new messages or reactions.
- * Stores new messages or reactions in state.
- * If events fetched successfully, the event cursor state is updated.
- * Retries after 100ms if a request fails.
- *
- * @param {number} wait how long to wait. no wait or 0 = short polling
- */
-async function pollEvents(wait) {
-    let queryString = `?after=${state.eventCursor}`;
-    if (wait) {
-        queryString = queryString.concat(`&wait=${wait}`);
-    }
-
-    const url = `${BACKEND_URL}/events${queryString}`;
-
-    try {
-        const response = await chatRequest(url);
-        state.eventCursor = response.cursor;
-        handleEvents(response.events);
-    } catch (e) {
-        console.error("Polling failed: ", e);
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        return pollEvents(wait);
-    }
-
-    pollEvents(wait);
 }
 
 /**
@@ -95,7 +61,8 @@ function handleEvents(events) {
                 stateMsg.dislikes = message.dislikes;
             }
         }
-        state.eventCursor = Number(event.sequence);
+        state.eventCursor = event.sequence;
+        socket.send(JSON.stringify({ type: "ack", cursor: state.eventCursor }));
     });
     render();
 }
@@ -210,32 +177,28 @@ async function chatRequest(url, options) {
 
 // pollEvents(30);
 
+const socket = new WebSocket(WS_URL);
+
 async function getSnapshot() {
-    console.log(`called snapshot`);
-    const response = await chatRequest("http://localhost:3000/snapshot");
+    console.log(`snapshot...`);
+    const response = await chatRequest(`${BACKEND_URL}/snapshot`);
     const messages = response.messages;
     messages.forEach((msg) => {
         state.messages.set(msg.id, msg);
     });
-    console.log(Array.from(state.messages.values()));
     state.eventCursor = response.cursor;
-    console.log(state.eventCursor);
+    socket.send(JSON.stringify({ type: "ack", cursor: state.eventCursor }));
     render();
 }
-
-const socket = new WebSocket("ws://localhost:3000");
 
 socket.addEventListener("open", async (event) => {
     console.log("connection opened...");
 });
 
 socket.addEventListener("message", (event) => {
-    const message = JSON.parse(event.data);
-    console.log(`on message: `);
-    console.log(message);
-    handleEvents([message]);
-    console.log(`event cursor: ${state.eventCursor}`);
-    console.log(state.messages.get(message.data.id));
+    const messages = JSON.parse(event.data);
+    handleEvents(messages);
+    console.log("At message handler, received: ", messages);
 });
 
 getSnapshot();
