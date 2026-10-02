@@ -177,7 +177,33 @@ async function chatRequest(url, options) {
 
 // pollEvents(30);
 
-const socket = new WebSocket(WS_URL);
+let socket;
+
+function connectWebSocket() {
+    socket = new WebSocket(WS_URL);
+    socket.addEventListener("open", (event) => {
+        console.log("connection opened...");
+    });
+
+    socket.addEventListener("message", (event) => {
+        const messages = JSON.parse(event.data);
+        handleEvents(messages);
+        console.log("At message handler, received: ", messages);
+    });
+
+    socket.addEventListener("close", () => {
+        console.log("websocket closed");
+        setTimeout(() => {
+            connectWebSocket();
+        }, 1000);
+    });
+
+    socket.addEventListener("error", (error) => {
+        console.error("WebSocket error:", error);
+    });
+}
+
+connectWebSocket();
 
 async function getSnapshot() {
     console.log(`snapshot...`);
@@ -190,15 +216,5 @@ async function getSnapshot() {
     socket.send(JSON.stringify({ type: "ack", cursor: state.eventCursor }));
     render();
 }
-
-socket.addEventListener("open", async (event) => {
-    console.log("connection opened...");
-});
-
-socket.addEventListener("message", (event) => {
-    const messages = JSON.parse(event.data);
-    handleEvents(messages);
-    console.log("At message handler, received: ", messages);
-});
 
 getSnapshot();

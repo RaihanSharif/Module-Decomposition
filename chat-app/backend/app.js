@@ -96,7 +96,7 @@ const webSocketServer = new WebSocketServer({
 webSocketServer.on("request", (request) => {
     const connection = request.accept(null, request.origin);
 
-    const subscriber = eventStream.subscribe(0, (events) => {
+    const subscriber = eventStream.subscribe((events) => {
         connection.sendUTF(JSON.stringify(events));
     });
 

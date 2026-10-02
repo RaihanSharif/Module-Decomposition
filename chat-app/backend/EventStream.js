@@ -37,10 +37,10 @@ class EventStream {
         return this.events.filter((event) => event.sequence > sequence);
     }
 
-    subscribe(cursor = 0, callback) {
+    subscribe(callback) {
         // TODO: add the listener's cursor
         const subscriber = {
-            cursor,
+            cursor: null,
             callback: callback,
         };
         this.subscribers.add(subscriber);
@@ -56,7 +56,16 @@ class EventStream {
 
     notifySubscribers() {
         for (const subscriber of this.subscribers) {
+            if (subscriber.cursor === null) {
+                continue;
+            }
+
             const events = this.getAfter(subscriber.cursor);
+
+            if (events.length === 0) {
+                continue;
+            }
+
             try {
                 subscriber.callback(events);
                 // console.log(`subscriber notified`);
