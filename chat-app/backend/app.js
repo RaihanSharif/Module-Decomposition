@@ -72,9 +72,7 @@ app.use((err, req, res, next) => {
         return res.status(404).json({ error: err.message });
     }
 
-    if (err instanceof Error) {
-        return res.status(500).json({ error: "Internal server error" });
-    }
+    return res.status(500).json({ error: "Internal server error" });
 });
 
 function toInteger(value) {
