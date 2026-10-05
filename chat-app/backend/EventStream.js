@@ -3,6 +3,7 @@ class EventStream {
         this.events = [];
         this.sequence = 0;
         this.waiters = new Set();
+        this.subscribers = new Set();
     }
 
     /**
@@ -22,7 +23,7 @@ class EventStream {
 
         this.events.push(event);
         this.notifyWaiters();
-
+        this.notifySubscribers();
         return event;
     }
 
@@ -33,6 +34,39 @@ class EventStream {
      */
     getAfter(sequence) {
         return this.events.filter((event) => event.sequence > sequence);
+    }
+
+    subscribe(callback) {
+        const subscriber = {
+            cursor: null,
+            callback: callback,
+        };
+        this.subscribers.add(subscriber);
+        return subscriber;
+    }
+
+    unsubscribe(subscriber) {
+        this.subscribers.delete(subscriber);
+    }
+
+    notifySubscribers() {
+        for (const subscriber of this.subscribers) {
+            if (subscriber.cursor === null) {
+                continue;
+            }
+
+            const events = this.getAfter(subscriber.cursor);
+
+            if (events.length === 0) {
+                continue;
+            }
+
+            try {
+                subscriber.callback(events);
+            } catch (err) {
+                console.error("subscriber failed", err);
+            }
+        }
     }
 
     /**

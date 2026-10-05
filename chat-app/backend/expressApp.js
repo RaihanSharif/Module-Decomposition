@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
-
 import express from "express";
 import cors from "cors";
 
@@ -56,6 +53,10 @@ app.get("/events", async (req, res) => {
     res.json({ cursor, events });
 });
 
+app.get("/snapshot", (req, res) => {
+    res.json({ cursor: eventStream.sequence, messages: getMessages() });
+});
+
 app.use((err, req, res, next) => {
     if (err instanceof ValidationError) {
         return res.status(400).json({ error: err.message });
@@ -65,9 +66,7 @@ app.use((err, req, res, next) => {
         return res.status(404).json({ error: err.message });
     }
 
-    if (err instanceof Error) {
-        return res.status(500).json({ error: "Internal server error" });
-    }
+    return res.status(500).json({ error: "Internal server error" });
 });
 
 function toInteger(value) {
@@ -78,6 +77,4 @@ function toInteger(value) {
     return Number.isSafeInteger(n) ? n : null;
 }
 
-app.listen(PORT, () => {
-    console.log(`chat app listening on port ${PORT}`);
-});
+export { app };

@@ -13,6 +13,7 @@ dummyData.push({ username: "user1", msg_body: "abcd" });
 dummyData.push({ username: "user2", msg_body: "xyz" });
 dummyData.push({ username: "user3", msg_body: "lmno" });
 dummyData.push({ username: "user4", msg_body: "pqrst" });
+dummyData.push({ username: "user4", msg_body: "aaaargh" });
 
 dummyData.forEach(({ username, msg_body }) => {
     addMessage(username, msg_body);
