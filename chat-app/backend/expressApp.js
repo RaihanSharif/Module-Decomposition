@@ -80,33 +80,4 @@ function toInteger(value) {
     return Number.isSafeInteger(n) ? n : null;
 }
 
-// WebSocket code
-
-const server = http.createServer(app);
-
-const webSocketServer = new WebSocketServer({
-    httpServer: server,
-});
-
-webSocketServer.on("request", (request) => {
-    const connection = request.accept(null, request.origin);
-
-    const subscriber = eventStream.subscribe((events) => {
-        connection.sendUTF(JSON.stringify(events));
-    });
-
-    connection.on("message", (message) => {
-        const data = JSON.parse(message.utf8Data);
-        if (data.type === "ack") {
-            subscriber.cursor = data.cursor;
-        }
-    });
-
-    connection.on("close", () => eventStream.unsubscribe(subscriber));
-});
-
-// server.listen(PORT, () => {
-//     console.log(`chat app server listening on port ${PORT}`);
-// });
-
 export { app };
