@@ -1,7 +1,5 @@
 import express from "express";
 import cors from "cors";
-import http from "http";
-import { server as WebSocketServer } from "websocket";
 
 import { addMessage, getMessages, addReaction, eventStream } from "./model.js";
 import { NotFoundError, ValidationError } from "./errorClasses.js";
