@@ -55,7 +55,6 @@ app.get("/events", async (req, res) => {
 
 app.get("/snapshot", (req, res) => {
     res.json({ cursor: eventStream.sequence, messages: getMessages() });
-    console.log(`sent snapshot`);
 });
 
 app.use((err, req, res, next) => {

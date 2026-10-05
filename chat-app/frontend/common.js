@@ -116,7 +116,6 @@ async function chatRequest(url, options) {
             data?.error ?? "Something went wrong",
         );
     }
-
     return data;
 }
 
@@ -167,7 +166,6 @@ function createChatEntry({
  * @returns the current client cursor
  */
 async function geteventSnapshot() {
-    console.log(`snapshot...`);
     const response = await chatRequest(`${BACKEND_URL}/snapshot`);
     const messages = response.messages;
     messages.forEach((msg) => {
@@ -177,4 +175,11 @@ async function geteventSnapshot() {
     return state.eventCursor;
 }
 
-export { saveEventData, sendMessage, render, chatRequest, geteventSnapshot };
+export {
+    saveEventData,
+    sendMessage,
+    render,
+    chatRequest,
+    geteventSnapshot,
+    state,
+};

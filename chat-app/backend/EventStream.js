@@ -23,7 +23,6 @@ class EventStream {
 
         this.events.push(event);
         this.notifyWaiters();
-        // console.log(`event added to event stream: ${event.sequence}`);
         this.notifySubscribers();
         return event;
     }
@@ -43,14 +42,11 @@ class EventStream {
             callback: callback,
         };
         this.subscribers.add(subscriber);
-        // console.log(`subscribed`);
-        console.log(`subscribed`);
         return subscriber;
     }
 
     unsubscribe(subscriber) {
         this.subscribers.delete(subscriber);
-        console.log("unsubscribed");
     }
 
     notifySubscribers() {
@@ -67,7 +63,6 @@ class EventStream {
 
             try {
                 subscriber.callback(events);
-                // console.log(`subscriber notified`);
             } catch (err) {
                 console.error("subscriber failed", err);
             }
