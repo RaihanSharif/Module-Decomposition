@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
-
 import express from "express";
 import cors from "cors";
 import http from "http";
@@ -108,6 +105,8 @@ webSocketServer.on("request", (request) => {
     connection.on("close", () => eventStream.unsubscribe(subscriber));
 });
 
-server.listen(PORT, () => {
-    console.log(`chat app server listening on port ${PORT}`);
-});
+// server.listen(PORT, () => {
+//     console.log(`chat app server listening on port ${PORT}`);
+// });
+
+export { app };
