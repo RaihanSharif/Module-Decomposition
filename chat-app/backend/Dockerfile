@@ -4,4 +4,4 @@ WORKDIR /app
 COPY . .
 RUN npm ci --omit=dev
 USER node
-ENTRYPOINT ["node", "app.js"]
+ENTRYPOINT ["node", "pollingApp.js"]
