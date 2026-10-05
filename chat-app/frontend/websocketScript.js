@@ -1,6 +1,7 @@
 import { saveEventData, render, geteventSnapshot } from "./common.js";
 
-const WS_URL = "ws://localhost:3000";
+const WS_URL = "ws://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy";
+// const WS_URL = "ws://localhost:3000";
 /**
  * Updates message state to match the data from events.
  * @param {List of events} events - the events to process.

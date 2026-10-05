@@ -6,7 +6,10 @@ import {
     state,
 } from "./common.js";
 
-const BACKEND_URL = "http://localhost:3000";
+// const BACKEND_URL = "http://localhost:3000";
+
+const BACKEND_URL =
+    "https://z4k2yzxetkpevkwf6zy9ea37.trainees.hosting.cyf.academy";
 
 /**
  * Updates message state to match the data from events.
