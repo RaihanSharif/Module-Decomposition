@@ -143,3 +143,6 @@ vite.config.ts.timestamp-*
 .vite/
 
 CORS_ORIGINS
+
+#VS Code
+.vscode
