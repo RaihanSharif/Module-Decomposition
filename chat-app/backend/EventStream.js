@@ -2,7 +2,11 @@ class EventStream {
     constructor() {
         this.events = [];
         this.sequence = 0;
+
+        // waiters are HTTP polling requests
         this.waiters = new Set();
+
+        // subscribers are websocket connections.
         this.subscribers = new Set();
     }
 
@@ -36,6 +40,7 @@ class EventStream {
         return this.events.filter((event) => event.sequence > sequence);
     }
 
+    // websocket subscriber
     subscribe(callback) {
         const subscriber = {
             cursor: null,
@@ -49,6 +54,7 @@ class EventStream {
         this.subscribers.delete(subscriber);
     }
 
+    // WebSocket subscribers
     notifySubscribers() {
         for (const subscriber of this.subscribers) {
             if (subscriber.cursor === null) {
@@ -70,7 +76,8 @@ class EventStream {
     }
 
     /**
-     * If no new events are available, keeps connection open for a while
+     * Polling (HTTP) connections waiting for new events
+     * If no new events are available, keeps connection open for specified time.
      * @param {number} after - returns events after this sequence number.
      * @param {*} timeout - How long to wait for a new event before closing the connection.
      * @returns A promise which resolves with a list of new events or empty list
@@ -98,7 +105,7 @@ class EventStream {
     }
 
     /**
-     * Sends new events for each waiting request, if there are any events to send.
+     * Sends new events for waiting HTTP requests, if there are any events to send.
      */
     notifyWaiters() {
         for (const waiter of this.waiters) {
